@@ -33,8 +33,7 @@ public static class FunctionalExtensions
     }
 
     /// <summary>
-    /// Functional composition for method chaining.
-    /// VB.NET lacks native composition operators.
+    /// Functional composition for method chaining. VB.NET lacks native composition operators.
     /// </summary>
     /// <typeparam name="T">The input and output type.</typeparam>
     /// <param name="value">The initial value.</param>
@@ -50,8 +49,7 @@ public static class FunctionalExtensions
     }
 
     /// <summary>
-    /// Memoization helper for expensive function calls.
-    /// VB.NET lacks native memoization support.
+    /// Memoization helper for expensive function calls. VB.NET lacks native memoization support.
     /// </summary>
     /// <typeparam name="TInput">The input type.</typeparam>
     /// <typeparam name="TOutput">The output type.</typeparam>
@@ -73,8 +71,7 @@ public static class FunctionalExtensions
     }
 
     /// <summary>
-    /// Currying helper for partial function application.
-    /// VB.NET lacks native currying support.
+    /// Currying helper for partial function application. VB.NET lacks native currying support.
     /// </summary>
     /// <typeparam name="T1">Type of the first parameter.</typeparam>
     /// <typeparam name="T2">Type of the second parameter.</typeparam>
@@ -88,8 +85,7 @@ public static class FunctionalExtensions
     }
 
     /// <summary>
-    /// Pipeline operator simulation for method chaining.
-    /// VB.NET lacks native pipeline operators.
+    /// Pipeline operator simulation for method chaining. VB.NET lacks native pipeline operators.
     /// </summary>
     /// <typeparam name="T">The input type.</typeparam>
     /// <typeparam name="TResult">The result type.</typeparam>

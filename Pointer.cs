@@ -39,6 +39,8 @@ public unsafe class Pointer<T> : IDisposable where T : unmanaged
     private int _length; // Number of elements
     private bool _isDisposed = false; // To detect redundant calls
 
+    internal T* RawPointer => _ptr;
+
     /// <summary>
     /// Creates a pointer from an existing array (internally pins the array to prevent GC movement).
     /// VB.NET cannot perform this operation natively.

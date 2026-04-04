@@ -1,8 +1,10 @@
 # PointersAndWorkaroundsVB
 
-A comprehensive library **tailored for VB.NET**, providing VB.NET developers with C#-like features including safe pointer operations, functional programming utilities, tuple deconstruction, and workarounds for VB.NET limitations.
+*__Not just a pointer library, but a full comprehensive library tailored for VB.NET__*.
 
-This library aims to bridge the gap between VB.NET and C# features, enabling VB.NET developers to make full use of **modern programming features** while maintaining the safety and simplicity of the VB.NET language.
+This NuGet package provides VB.NET developers with C#-like features including safe pointer operations, **functional programming utilities**, **tuple deconstruction**, and **workarounds for VB.NET limitations**.
+
+The library aims to bridge the gap between VB.NET and C# features, enabling VB.NET developers to make full use of **modern programming features** while maintaining the safety and simplicity of the VB.NET language.
 
 ## Requirements
 
@@ -14,9 +16,10 @@ This library aims to bridge the gap between VB.NET and C# features, enabling VB.
 
 ### 🔧 Pointer Operations
 - **Safe pointer management** for VB.NET developers
-- **MemoryBlock class** for unmanaged memory allocation
+- **Enhanced MemoryBlock class** with zero-initialization, span support, and array copying
 - **Typed pointers** with bounds checking
 - **Array pinning** to prevent GC movement
+- **Memory block creation** from existing pointers
 
 ### 🧮 Functional Programming
 - **Pattern matching** expressions
@@ -30,6 +33,7 @@ This library aims to bridge the gap between VB.NET and C# features, enabling VB.
 - **Assignments with return values**
 - **Type matching** utilities
 - **Async iteration** with loop control
+- **MakeAsyncEnumerable** for converting iterator functions to async enumerables
 - **Safe array slicing** with bounds checking
 
 ### 📦 Tuple Deconstruction
@@ -124,6 +128,53 @@ Dim original As Integer() = {1, 2, 3, 4, 5}
 Dim slice = Workarounds.Slice(original, 1, 3)
 ```
 
+### Enhanced MemoryBlock Features
+
+```vb
+Imports PointersAndWorkaroundsVB
+
+' Create memory block with zero initialization
+Using memoryBlock As New MemoryBlock(1024, zeroMemory:=True)
+    ' Copy data from managed array
+    Dim sourceData() As Integer = {1, 2, 3, 4, 5}
+    memoryBlock.CopyFrom(sourceData)
+    
+    ' Work with spans for safe access
+    Dim span = memoryBlock.AsSpan(Of Integer)(5)
+    For i As Integer = 0 To span.Length - 1
+        span(i) *= 2 ' Modify data through span
+    Next i
+    
+    ' Copy data back to managed array
+    Dim resultData(4) As Integer
+    memoryBlock.CopyTo(resultData)
+End Using
+
+' Create memory block from existing pointer (advanced usage)
+Using existingPtr As Pointer(Of Integer) = GetSomePointer()
+    Dim referencedBlock = MemoryBlock.FromPointer(existingPtr, 256)
+    ' ... then work with the referenced block
+End Using
+```
+
+### Async Enumerable Support
+
+```vb
+Imports PointersAndWorkaroundsVB
+
+' Convert iterator function to async enumerable
+Dim asyncNumbers = Workarounds.MakeAsyncEnumerable(
+    Iterator Function()
+        For i = 1 To 10 : Yield i : Next i
+    End Function)
+
+' Use with async iteration
+Await asyncNumbers.ForEachAsync(Function(num)
+    Console.WriteLine($"Processing number: {num}")
+    Return LoopSignal.Normal
+End Function)
+```
+
 ### Tuple Deconstruction
 
 ```vb
@@ -148,16 +199,24 @@ person.Deconstruct(firstName, lastName, age)
 - `Pointer<T>` - Generic pointer class with indexer access
 
 ### MemoryBlock Class
-- `MemoryBlock(sizeInBytes)` - Allocate unmanaged memory
+- `MemoryBlock(sizeInBytes, zeroMemory)` - Allocate unmanaged memory with optional zero initialization
 - `MemoryBlock.Allocate<T>(elementCount)` - Type-safe allocation
+- `MemoryBlock.FromPointer<T>(pointer, sizeInBytes)` - Create memory block from existing Pointer(Of T)
 - `AsPointer<T>(elementCount)` - Create typed pointer from memory block
+- `Fill(byte)` / `Fill<T>(T)` - Fill memory with byte or typed value
+- `CopyFrom<T>(array)` - Copy data from managed array to memory block
+- `CopyTo<T>(array)` - Copy data from memory block to managed array
+- `AsSpan<T>(elementCount)` - Create span for safe memory access
+- `AsReadOnlySpan<T>(elementCount)` - Create read-only span for safe memory access
 
 ### Workarounds Module
 - `Swap(ref T, ref T)` - Swap two values
 - `Assign(ref T, T)` - Assign with return value
 - `TryMatchType(object, out T)` - Type-safe matching
+- `MakeAsyncEnumerable(enumerableFunc)` - Convert iterator function to async enumerable
 - `ForEachAsync` - Async iteration with loop control
 - `Slice(array, start, end)` - Safe array slicing
+- `Slice(list, start, end)` - Safe list slicing
 
 ### FunctionalExtensions Module
 - `PatternMatch` - Pattern matching expressions

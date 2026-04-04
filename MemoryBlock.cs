@@ -22,12 +22,39 @@ public unsafe class MemoryBlock : IDisposable
     /// VB.NET lacks native support for unmanaged memory allocation.
     /// </summary>
     /// <param name="sizeInBytes">The size of the memory block in bytes.</param>
-    public MemoryBlock(int sizeInBytes)
+    /// <param name="initMemoryToZero">Whether to initialize the memory to zero.</param>
+    public MemoryBlock(int sizeInBytes, bool initMemoryToZero = false)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sizeInBytes);
 
         _sizeInBytes = sizeInBytes;
         _memory = Marshal.AllocHGlobal(sizeInBytes).ToPointer();
+
+        if (initMemoryToZero) Fill(0);
+    }
+
+    /// <summary>
+    /// Creates a memory block from an existing pointer.
+    /// Use with caution - the caller is responsible for the lifetime of the pointer.
+    /// </summary>
+    /// <param name="pointer">The existing pointer.</param>
+    /// <param name="sizeInBytes">The size of the memory block in bytes.</param>
+    /// <returns>A new MemoryBlock instance that references the existing memory.</returns>
+    public static MemoryBlock FromPointer<T>(Pointer<T> pointer, int sizeInBytes) where T : unmanaged
+    {
+        ArgumentNullException.ThrowIfNull(pointer);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sizeInBytes);
+
+        return new MemoryBlock(pointer.RawPointer, sizeInBytes);
+    }
+
+    /// <summary>
+    /// Private constructor for creating MemoryBlock from existing pointer.
+    /// </summary>
+    private MemoryBlock(void* ptr, int sizeInBytes)
+    {
+        _memory = ptr;
+        _sizeInBytes = sizeInBytes;
     }
 
     /// <summary>
@@ -90,6 +117,114 @@ public unsafe class MemoryBlock : IDisposable
         {
             ptr[i] = value;
         }
+    }
+
+    /// <summary>
+    /// Fills the memory block with a typed value.
+    /// </summary>
+    /// <typeparam name="T">The type of value to fill with.</typeparam>
+    /// <param name="value">The value to fill with.</param>
+    public void Fill<T>(T value) where T : unmanaged
+    {
+        ObjectDisposedException.ThrowIf(_isDisposed, nameof(MemoryBlock));
+
+        T* ptr = (T*)_memory;
+        int elementCount = _sizeInBytes / sizeof(T);
+
+        for (int i = 0; i < elementCount; i++)
+        {
+            ptr[i] = value;
+        }
+    }
+
+    /// <summary>
+    /// Copies data from a managed array to this memory block.
+    /// </summary>
+    /// <typeparam name="T">The type of elements in the array.</typeparam>
+    /// <param name="array">The source array.</param>
+    /// <param name="startIndex">The starting index in the array.</param>
+    /// <param name="count">The number of elements to copy.</param>
+    public void CopyFrom<T>(T[] array, int startIndex = 0, int count = 0) where T : unmanaged
+    {
+        ObjectDisposedException.ThrowIf(_isDisposed, nameof(MemoryBlock));
+        ArgumentNullException.ThrowIfNull(array);
+
+        if (count == 0) count = array.Length - startIndex;
+        if (startIndex < 0 || startIndex >= array.Length)
+            throw new ArgumentOutOfRangeException(nameof(startIndex));
+        if (count < 0 || startIndex + count > array.Length)
+            throw new ArgumentOutOfRangeException(nameof(count));
+
+        int requiredSize = count * sizeof(T);
+        if (requiredSize > _sizeInBytes)
+            throw new ArgumentException("Memory block is too small for the specified number of elements.");
+
+        fixed (T* source = &array[startIndex])
+        {
+            Buffer.MemoryCopy(source, _memory, _sizeInBytes, requiredSize);
+        }
+    }
+
+    /// <summary>
+    /// Copies data from this memory block to a managed array.
+    /// </summary>
+    /// <typeparam name="T">The type of elements in the array.</typeparam>
+    /// <param name="array">The destination array.</param>
+    /// <param name="startIndex">The starting index in the array.</param>
+    /// <param name="count">The number of elements to copy.</param>
+    public void CopyTo<T>(T[] array, int startIndex = 0, int count = 0) where T : unmanaged
+    {
+        ObjectDisposedException.ThrowIf(_isDisposed, nameof(MemoryBlock));
+        ArgumentNullException.ThrowIfNull(array);
+
+        if (count == 0) count = array.Length - startIndex;
+        if (startIndex < 0 || startIndex >= array.Length)
+            throw new ArgumentOutOfRangeException(nameof(startIndex));
+        if (count < 0 || startIndex + count > array.Length)
+            throw new ArgumentOutOfRangeException(nameof(count));
+
+        int requiredSize = count * sizeof(T);
+        if (requiredSize > _sizeInBytes)
+            throw new ArgumentException("Memory block does not contain enough data for the specified number of elements.");
+
+        fixed (T* destination = &array[startIndex])
+        {
+            Buffer.MemoryCopy(_memory, destination, count * sizeof(T), requiredSize);
+        }
+    }
+
+    /// <summary>
+    /// Creates a span over the memory block for safe access.
+    /// </summary>
+    /// <typeparam name="T">The type of elements in the span.</typeparam>
+    /// <param name="elementCount">The number of elements.</param>
+    /// <returns>A span over the memory block.</returns>
+    public Span<T> AsSpan<T>(int elementCount) where T : unmanaged
+    {
+        ObjectDisposedException.ThrowIf(_isDisposed, nameof(MemoryBlock));
+
+        int requiredSize = elementCount * sizeof(T);
+        if (requiredSize > _sizeInBytes)
+            throw new ArgumentException("Memory block is too small for the specified number of elements.");
+
+        return new Span<T>(_memory, elementCount);
+    }
+
+    /// <summary>
+    /// Creates a read-only span over the memory block for safe access.
+    /// </summary>
+    /// <typeparam name="T">The type of elements in the span.</typeparam>
+    /// <param name="elementCount">The number of elements.</param>
+    /// <returns>A read-only span over the memory block.</returns>
+    public ReadOnlySpan<T> AsReadOnlySpan<T>(int elementCount) where T : unmanaged
+    {
+        ObjectDisposedException.ThrowIf(_isDisposed, nameof(MemoryBlock));
+
+        int requiredSize = elementCount * sizeof(T);
+        if (requiredSize > _sizeInBytes)
+            throw new ArgumentException("Memory block is too small for the specified number of elements.");
+
+        return new ReadOnlySpan<T>(_memory, elementCount);
     }
 
     /// <summary>

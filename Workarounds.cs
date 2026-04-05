@@ -72,18 +72,30 @@ public static class Workarounds
 
     /// <summary>
     /// Converts an iterator function (which returns an enumerable) to an async enumerable.
+    /// <c>Await</c> keyword required for .NET 8.0 and .NET 9.0.
     /// </summary>
     /// <remarks>
-    /// For variables, fields, properties etc. of type <c>IEnumerable(Of T)</c>,
-    /// simply use the built-in <c>ToAsyncEnumerable</c> extension method.
+    /// In .NET SDK 10.0, use the built-in <c>ToAsyncEnumerable</c> extension method for 
+    /// variables, fields, properties etc. of type <c>IEnumerable(Of T)</c>.
+    /// That extension method is not supported in .NET 8.0 and .NET 9.0.
     /// </remarks>
     /// <typeparam name="T">The type of the elements in the enumerable.</typeparam>
     /// <param name="enumerableFunc">The function that returns the enumerable.</param>
     /// <returns>The async enumerable of type <typeparamref name="T"/>.</returns>
+#if NET10_0
     public static IAsyncEnumerable<T> MakeAsyncEnumerable<T>(Func<IEnumerable<T>> enumerableFunc)
     {
         return enumerableFunc().ToAsyncEnumerable();
     }
+#else
+    public static async IAsyncEnumerable<T> MakeAsyncEnumerable<T>(Func<IEnumerable<T>> enumerableFunc)
+    {
+        foreach (T item in enumerableFunc())
+        {
+            yield return item;
+        }
+    }
+#endif
 
     /// <summary>
     /// Asynchronously iterates over each element in the enumerable and performs the 

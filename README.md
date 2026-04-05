@@ -2,13 +2,15 @@
 
 *__Not just a pointer library, but a full comprehensive library tailored for VB.NET__*.
 
+> **New in version 1.0.2**: With the optimized `MakeAsyncEnumerable` method, this library is now backward-compatible with **.NET SDK 8.0** (and even .NET 9.0).
+
 This NuGet package provides VB.NET developers with C#-like features including safe pointer operations, **functional programming utilities**, **tuple deconstruction**, and **workarounds for VB.NET limitations**.
 
 The library aims to bridge the gap between VB.NET and C# features, enabling VB.NET developers to make full use of **modern programming features** while maintaining the safety and simplicity of the VB.NET language.
 
 ## Requirements
 
-- **[.NET 10.0](https://dotnet.microsoft.com/download/dotnet/10.0)** or later
+- **[.NET 8.0](https://dotnet.microsoft.com/download/dotnet/8.0)**, **[.NET 10.0](https://dotnet.microsoft.com/download/dotnet/10.0)** or later
 - **VB.NET** projects
 - **Unsafe code** permission (automatically enabled)
 
@@ -162,8 +164,9 @@ End Using
 ```vb
 Imports PointersAndWorkaroundsVB
 
-' Convert iterator function to async enumerable
-Dim asyncNumbers = Workarounds.MakeAsyncEnumerable(
+' Convert iterator function to async enumerable (for .NET 8.0 & .NET 9.0)
+' NOTE: For .NET 10.0, DO NOT USE the `Await` keyword.
+Dim asyncNumbers = Await Workarounds.MakeAsyncEnumerable(
     Iterator Function()
         For i = 1 To 10 : Yield i : Next i
     End Function)

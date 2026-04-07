@@ -2,7 +2,7 @@
 
 *__Not just a pointer library, but a full comprehensive library tailored for VB.NET__*.
 
-> **New in version 1.0.2**: With the optimized `MakeAsyncEnumerable` method, this library is now backward-compatible with **.NET SDK 8.0** (and even .NET 9.0).
+> **New in version 1.0.3**: Added a static class named `SizeOf` that provides compile-time constants for common CLI types, allowing for cross-platform type size calculations, memory layout planning, and buffer calculations.
 
 This NuGet package provides VB.NET developers with C#-like features including safe pointer operations, **functional programming utilities**, **tuple deconstruction**, and **workarounds for VB.NET limitations**.
 
@@ -37,11 +37,17 @@ The library aims to bridge the gap between VB.NET and C# features, enabling VB.N
 - **Async iteration** with loop control
 - **MakeAsyncEnumerable** for converting iterator functions to async enumerables
 - **Safe array slicing** with bounds checking
+- **Loop signal control** for fine-grained iteration control
 
 ### 📦 Tuple Deconstruction
 - **Value tuple extensions** for VB.NET
 - **Deconstruction helpers** for 2-5 element tuples
 - **Type-safe tuple operations**
+
+### 📐 Type Size Constants
+- **`SizeOf` static class** provides compile-time constants for common CLI types
+- **Cross-platform type size** calculations
+- **Memory layout planning** and buffer calculations
 
 ## Installation
 
@@ -128,6 +134,22 @@ End If
 ' Safe array slicing
 Dim original As Integer() = {1, 2, 3, 4, 5}
 Dim slice = Workarounds.Slice(original, 1, 3)
+
+' Loop control with LoopSignal
+Dim numbers() As Integer = {1, 2, 3, 4, 5}
+Dim asyncNums = Await Workarounds.MakeAsyncEnumerable(
+    Iterator Function()
+        For Each n In numbers
+            Yield n
+        Next
+    End Function)
+
+Await asyncNums.ForEachAsync(Function(num)
+    If num = 3 Then Return LoopSignal.Continue ' Skip 3
+    If num = 5 Then Return LoopSignal.Break     ' Stop at 5
+    Console.WriteLine(num)
+    Return LoopSignal.Normal
+End Function)
 ```
 
 ### Enhanced MemoryBlock Features
@@ -194,7 +216,70 @@ Dim firstName As String, lastName As String, age As Integer
 person.Deconstruct(firstName, lastName, age)
 ```
 
+### Type Size Constants
+
+```vb
+Imports PointersAndWorkaroundsVB
+
+' Calculate buffer sizes for data structures
+Dim bufferSize As Integer = SizeOf.Integer + (SizeOf.Double * 10) + SizeOf.Boolean
+
+' Calculate memory layout
+Dim structSize As Integer = SizeOf.Integer + SizeOf.Long + SizeOf.Char
+
+' Use in unsafe code scenarios
+Using memory As New MemoryBlock(SizeOf.Integer * 100)
+    ' Allocate space for 100 integers
+End Using
+
+' Binary serialization helpers
+Dim floatCount As Integer = totalBytes \ SizeOf.Single
+Dim doubleCount As Integer = totalBytes \ SizeOf.Double
+```
+
+### Loop Signal Control
+
+```vb
+Imports PointersAndWorkaroundsVB
+
+' LoopSignal provides fine-grained control over async iterations:
+' - Normal: Continue with normal iteration
+' - Continue: Skip to next iteration
+' - Break: Exit the loop immediately
+
+Await someAsyncEnumerable.ForEachAsync(Function(item)
+    If ShouldSkip(item) Then Return LoopSignal.Continue
+    If ShouldStop(item) Then Return LoopSignal.Break
+    Process(item)
+    Return LoopSignal.Normal
+End Function)
+```
+
 ## API Reference
+
+### LoopSignal Enum
+- `LoopSignal.Normal` - Continue with normal iteration behavior
+- `LoopSignal.Continue` - Skip to next iteration immediately
+- `LoopSignal.Break` - Exit the loop immediately
+
+### SizeOf Class
+Static class providing compile-time constants for CLI type sizes (in bytes):
+
+| Constant | Type | Size (bytes) |
+|----------|------|--------------|
+| `SizeOf.Integer` | Int32 | 4 |
+| `SizeOf.UInteger` | UInt32 | 4 |
+| `SizeOf.Long` | Int64 | 8 |
+| `SizeOf.ULong` | UInt64 | 8 |
+| `SizeOf.Short` | Int16 | 2 |
+| `SizeOf.UShort` | UInt16 | 2 |
+| `SizeOf.Byte` | Byte | 1 |
+| `SizeOf.SByte` | SByte | 1 |
+| `SizeOf.Single` | Single (float) | 4 |
+| `SizeOf.Double` | Double | 8 |
+| `SizeOf.Decimal` | Decimal | 16 |
+| `SizeOf.Char` | Char | 2 |
+| `SizeOf.Boolean` | Boolean | 1 |
 
 ### Pointer Class
 - `Pointer.Create(array)` - Create a typed pointer from an array
@@ -213,23 +298,95 @@ person.Deconstruct(firstName, lastName, age)
 - `AsReadOnlySpan<T>(elementCount)` - Create read-only span for safe memory access
 
 ### Workarounds Module
-- `Swap(ref T, ref T)` - Swap two values
-- `Assign(ref T, T)` - Assign with return value
-- `TryMatchType(object, out T)` - Type-safe matching
+- `Swap(ref T, ref T)` - Swap two values of any type
+- `Assign(ref T, T)` - Assign with return value (enables chained assignments)
+- `TryMatchType(object, out T)` - Type-safe pattern matching
 - `MakeAsyncEnumerable(enumerableFunc)` - Convert iterator function to async enumerable
-- `ForEachAsync` - Async iteration with loop control
-- `Slice(array, start, end)` - Safe array slicing
-- `Slice(list, start, end)` - Safe list slicing
+- `ForEachAsync` - Async iteration with loop control signals
+- `Slice(array, start, end)` - Safe array slicing with bounds checking
+- `Slice(list, start, end)` - Safe list slicing with bounds checking
 
 ### FunctionalExtensions Module
-- `PatternMatch` - Pattern matching expressions
-- `Compose` - Function composition
-- `Memoize` - Function memoization
-- `Curry` - Partial function application
-- `Pipe` - Pipeline operator simulation
+- `PatternMatch` - Pattern matching expressions with predicate-result pairs
+- `Compose` - Function composition for chaining transformations
+- `Memoize` - Function memoization for caching expensive computations
+- `Curry` - Partial function application (currying)
+- `Pipe` - Pipeline operator simulation for fluent method chaining
 
 ### ValueTupleExtensions Module
-- `Deconstruct` methods for 2-5 element tuples
+- `Deconstruct` - Deconstruction methods for 2-5 element tuples
+
+## Advanced Usage
+
+### Combining Functional Extensions with Workarounds
+
+```vb
+Imports PointersAndWorkaroundsVB
+
+' Compose multiple operations with pattern matching
+Dim result = 42.5F _
+    .Pipe(Function(x) x * 2) _
+    .PatternMatch(
+        (Function(x) x < 0, "Negative"),
+        (Function(x) x >= 0 AndAlso x < 100, "Small"),
+        (Function(x) x >= 100, "Large")
+    )
+```
+
+### Using SizeOf for Binary Protocol Implementation
+
+```vb
+Imports PointersAndWorkaroundsVB
+
+' Calculate exact message size for a protocol
+Dim messageSize As Integer =
+    SizeOf.Integer +          ' Message ID
+    SizeOf.Integer +          ' Timestamp
+    SizeOf.Integer +          ' Payload length
+    payload.Length * SizeOf.Byte  ' Actual payload
+
+' Allocate appropriate buffer
+Using buffer As New MemoryBlock(messageSize, zeroMemory:=True)
+    ' ... write message fields
+End Using
+```
+
+### Advanced Async Iteration Patterns
+
+```vb
+Imports PointersAndWorkaroundsVB
+
+' Batch processing with early termination
+Await largeDataset.ToAsyncEnumerable().ForEachAsync(Function(item)
+    If Not IsValid(item) Then Return LoopSignal.Continue
+    ProcessBatch(item)
+    batchCount += 1
+    If batchCount >= maxBatchSize Then Return LoopSignal.Break
+    Return LoopSignal.Normal
+End Function)
+```
+
+### Tuple Deconstruction in Complex Scenarios
+
+```vb
+Option Strict On
+Option Infer On
+Imports PointersAndWorkaroundsVB
+
+' Multiple tuple deconstruction
+Dim record = ("Alice", "Johnson", 28, "NYC", 50000D)
+Dim firstName, lastName, city As String
+Dim age As Integer
+Dim salary As Double
+
+record.Deconstruct(firstName, lastName, age, city, salary)
+
+' Useful for swapping tuple values
+Dim pair = (100, 200)
+Dim a, b As Integer
+pair.Deconstruct(a, b)
+Workarounds.Swap(a, b) ' Now a=200, b=100
+```
 
 ## Contributing
 

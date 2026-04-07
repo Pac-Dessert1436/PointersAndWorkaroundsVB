@@ -9,7 +9,7 @@
 
     <!-- NuGet Package Metadata -->
     <PackageId>PointersAndWorkaroundsVB</PackageId>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
     <Authors>Pac-Dessert1436</Authors>
     <Company></Company>
     <Description>Not just a pointer library, but a full comprehensive library tailored for VB.NET.</Description>

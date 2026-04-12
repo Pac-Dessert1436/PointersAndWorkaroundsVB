@@ -244,4 +244,14 @@ public static class Workarounds
 
         return list.GetRange(startIndex, endIndex - startIndex);
     }
+
+    /// <summary>
+    /// Performs the specified action on the value, perfect for VB.NET's <c>With</c> statement.
+    /// Note that VB.NET Structure values must be updated manually in the callback, while classes 
+    /// are not affected.
+    /// </summary>
+    /// <typeparam name="T">The type of the value.</typeparam>
+    /// <param name="value">The value to operate on.</param>
+    /// <param name="action">The callback action to perform on the value.</param>
+    public static void DoWith<T>(this T value, Action<T> action) => action(value);
 }

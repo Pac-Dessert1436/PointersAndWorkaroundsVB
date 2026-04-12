@@ -4,7 +4,7 @@
 
 > **New in version 1.0.3**: Added a static class named `SizeOf` that provides compile-time constants for common CLI types, allowing for cross-platform type size calculations, memory layout planning, and buffer calculations.
 
-This NuGet package provides VB.NET developers with C#-like features including safe pointer operations, **functional programming utilities**, **tuple deconstruction**, and **workarounds for VB.NET limitations**.
+This NuGet package provides VB.NET developers with C#-like features including safe pointer operations, **functional programming utilities**, **tuple deconstruction**, **workarounds for VB.NET limitations**, and in version 1.0.4, **parameter validation**.
 
 The library aims to bridge the gap between VB.NET and C# features, enabling VB.NET developers to make full use of **modern programming features** while maintaining the safety and simplicity of the VB.NET language.
 
@@ -38,6 +38,14 @@ The library aims to bridge the gap between VB.NET and C# features, enabling VB.N
 - **MakeAsyncEnumerable** for converting iterator functions to async enumerables
 - **Safe array slicing** with bounds checking
 - **Loop signal control** for fine-grained iteration control
+- **`DoWith` extension method** to perform actions with a value (see [Quick Start → Workarounds](#workarounds); note that VB.NET Structure values must be **updated manually** in the callback)
+
+### ✅ Parameter Validation
+- **Declarative validation** using attributes
+- **Multiple validation rules** including null, empty, numeric, string validation
+- **Custom constraints** like length ranges, value ranges, regex patterns
+- **Built-in validators** for email, URL, and common patterns
+- **Reflection-based validation** for automatic parameter checking
 
 ### 📦 Tuple Deconstruction
 - **Value tuple extensions** for VB.NET
@@ -150,6 +158,17 @@ Await asyncNums.ForEachAsync(Function(num)
     Console.WriteLine(num)
     Return LoopSignal.Normal
 End Function)
+
+' New in 1.0.4: `DoWith` extension method to perform actions with a value.
+' Important: VB.NET Structure values must be updated manually in the callback;
+'            Classes are not affected, however.
+Dim myVector As New Vector2(3, 5)  ' from `System.Numerics` namespace
+myVector.DoWith(Sub(vec)
+                    vec += New Vector2(1, 2)
+                    Console.WriteLine($"Coordinate: {vec}")
+                    myVector = vec  ' Update the vector value
+                End Sub)
+' Extra note: If you want to keep the original value, no need to update it.
 ```
 
 ### Enhanced MemoryBlock Features
@@ -198,6 +217,62 @@ Await asyncNumbers.ForEachAsync(Function(num)
     Console.WriteLine($"Processing number: {num}")
     Return LoopSignal.Normal
 End Function)
+```
+
+### Parameter Validation
+
+```vb
+Imports PointersAndWorkaroundsVB
+
+' Simple parameter validation using attributes
+Public Sub ProcessUser(
+    <ValidateParam(ValidationRule.NotNullOrEmpty)> username As String,
+    <ValidateParam(ValidationRule.Email)> email As String,
+    <ValidateParam(ValidationRule.AlwaysPositive)> age As Integer)
+    ' Parameters are automatically validated before method execution
+    Console.WriteLine($"Processing user: {username}, {email}, {age}")
+End Sub
+
+' Advanced validation with custom constraints
+Public Sub ProcessData(
+    <ValidateParam(ValidationRule.NotNullOrEmpty, MinLength:=3, MaxLength:=50)> name As String,
+    <ValidateParam(ValidationRule.AlwaysPositive, MinValue:=18, MaxValue:=120)> age As Integer,
+    <ValidateParam(ValidationRule.Url)> website As String)
+    ' All validation rules are checked automatically
+    Console.WriteLine($"Processing: {name}, {age}, {website}")
+End Sub
+
+' Manual validation using ParameterValidator
+Public Sub ValidateManually(value As String)
+    ParameterValidator.Validate(
+        value,
+        ValidationRule.NotNullOrWhitespace,
+        "value",
+        minLength:=5,
+        maxLength:=100
+    )
+    ' Continue with validated value
+End Sub
+
+' Validate all parameters of a method using reflection
+Public Sub ValidateMethodParameters()
+    Dim methodInfo = GetType(MyClass).GetMethod("ProcessUser")
+    Dim parameters = {"john_doe", "john@example.com", 25}
+    
+    ParameterValidation.ValidateParameters(methodInfo, parameters)
+    ' All parameters are validated automatically
+End Sub
+
+' Combined validation rules
+Public Sub ProcessComplexData(
+    <ValidateParam(ValidationRule.NotNullOrEmpty Or ValidationRule.NotWhitespace, 
+                  MinLength:=5, MaxLength:=100)> description As String,
+    <ValidateParam(ValidationRule.AlwaysPositive, 
+                  MinValue:=0, MaxValue:=100)> percentage As Double,
+    <ValidateParam(ValidationRule.Finite)> measurement As Double)
+    ' Multiple validation rules applied automatically
+    Console.WriteLine($"Processing: {description}, {percentage}%, {measurement}")
+End Sub
 ```
 
 ### Tuple Deconstruction
@@ -305,6 +380,30 @@ Static class providing compile-time constants for CLI type sizes (in bytes):
 - `ForEachAsync` - Async iteration with loop control signals
 - `Slice(array, start, end)` - Safe array slicing with bounds checking
 - `Slice(list, start, end)` - Safe list slicing with bounds checking
+
+### Parameter Validation APIs
+- `ValidateParamAttribute` - Declarative parameter validation using attributes
+- `ValidationRule` - Enum with validation rules (NotNull, NotEmpty, AlwaysPositive, Email, Url, etc.)
+- `ParameterValidation.ValidateParameters(method, values)` - Validate all method parameters using reflection
+- `ParameterValidation.Validate(value, rules, ...)` - Manual parameter validation
+- Custom constraints: `MinLength`, `MaxLength`, `MinValue`, `MaxValue`, `RegexPattern`
+
+**Parameter Validation Rules (as in `ValidationRule` enum):**
+- `NotNull` - Parameter must not be null
+- `NotEqualToZero` - Parameter must not be zero
+- `NonNegative` - Parameter must be >= 0
+- `NonPositive` - Parameter must be <= 0
+- `AlwaysPositive` - Parameter must be > 0
+- `AlwaysNegative` - Parameter must be < 0
+- `NotEmpty` - Parameter must not be empty (strings/collections)
+- `NotNullOrEmpty` - Not null and not empty
+- `NotWhitespace` - Parameter must not be whitespace (strings)
+- `NotNullOrWhitespace` - Not null, not empty, not whitespace
+- `NotDefault` - Parameter must not be default value for its type
+- `NotNaN` - Parameter must not be NaN (floating-point)
+- `Finite` - Parameter must be finite (not NaN or infinity)
+- `Email` - Parameter must be valid email address
+- `Url` - Parameter must be valid URL
 
 ### FunctionalExtensions Module
 - `PatternMatch` - Pattern matching expressions with predicate-result pairs
